@@ -104,6 +104,7 @@ date = df['Date_Time']
 df.index = pd.to_datetime(date, format="%m/%d/%Y %H:%M UTC")
 df1 = pd.to_datetime(df1, format = "%Y-%m-%d %H:%M UTC")
 wind = df['wind_speed_set_1'].values * units.mph
+wind *= 0.44704
 dire = df['wind_direction_set_1'].values * units.degrees
 u, v = mpcalc.wind_components(wind, dire)
 temp = df['air_temp_set_1']
@@ -208,6 +209,7 @@ date = df['Date_Time']
 df.index = pd.to_datetime(date, format="%m/%d/%Y %H:%M UTC")
 df1 = pd.to_datetime(df1, format = "%Y-%m-%d %H:%M UTC")
 wind = df['wind_speed_set_1'].values * units.mph
+wind *= 0.44704
 dire = df['wind_direction_set_1'].values * units.degrees
 u_meso, v_meso = mpcalc.wind_components(wind, dire)
 temp = df['air_temp_set_1']
