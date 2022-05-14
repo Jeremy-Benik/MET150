@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Mon May  9 15:47:37 2022
+Created on Fri May 13 17:23:56 2022
 
 @author: jeremybenik
 """
@@ -19,14 +19,16 @@ from metpy.units import units
 wrfin = nc.Dataset('/Volumes/Data/School/SJSU/Spring_2022/150/Projects/Project_2/wrfinputs/run_1/wrfinput_d02')
 # %% Using wrf ll to xy to find the mesowest stations on the grids
 print('Finding the indexes for the station')
-south_north_station_1_u = wrf.ll_to_xy(wrfin, 38.784597, -120.310514, timeidx = 0, squeeze = False, meta = False, stagger = 'u')[1]
-west_east_stag_1_u = wrf.ll_to_xy(wrfin, 38.784597, -120.310514, timeidx = 0, squeeze = False, meta = False, stagger = 'u')[0]
+lat = 38.784597
+lon = -120.310514
+south_north_station_1_u = wrf.ll_to_xy(wrfin, lat, lon, timeidx = 0, squeeze = False, meta = False, stagger = 'u')[1]
+west_east_stag_1_u = wrf.ll_to_xy(wrfin, lat, lon, timeidx = 0, squeeze = False, meta = False, stagger = 'u')[0]
 
-south_north_stag_1_v = wrf.ll_to_xy(wrfin, 38.784597, -120.310514, timeidx = 0, squeeze = False, meta = False, stagger = 'v')[1]
-west_east_station_1_v = wrf.ll_to_xy(wrfin, 38.784597, -120.310514, timeidx = 0, squeeze = False, meta = False, stagger = 'v')[0]
+south_north_stag_1_v = wrf.ll_to_xy(wrfin, lat, lon, timeidx = 0, squeeze = False, meta = False, stagger = 'v')[1]
+west_east_station_1_v = wrf.ll_to_xy(wrfin, lat, lon, timeidx = 0, squeeze = False, meta = False, stagger = 'v')[0]
 
-south_north_station_1 = wrf.ll_to_xy(wrfin, 38.784597, -120.310514, timeidx = 0, squeeze = False, meta = False, stagger = 'm')[1]
-west_east_station_1 = wrf.ll_to_xy(wrfin, 38.784597, -120.310514, timeidx = 0, squeeze = False, meta = False, stagger = 'm')[0]
+south_north_station_1 = wrf.ll_to_xy(wrfin, lat, lon, timeidx = 0, squeeze = False, meta = False, stagger = 'm')[1]
+west_east_station_1 = wrf.ll_to_xy(wrfin, lat, lon, timeidx = 0, squeeze = False, meta = False, stagger = 'm')[0]
 
 print('reading in the wrfout files')
 path = r'/Volumes/Data/School/SJSU/Spring_2022/150/Projects/Project_2/wrfout_first_run/'
@@ -41,84 +43,33 @@ times = []
 t2 = []
 u10 = []
 v10 = []
+times = []
 filenames = glob.glob(path + 'wrfout_d02_2021-12*')
 for filename in filenames:
     wrfout = nc.Dataset(filename)
-    xtime = wrfout.variables['XTIME'][:]
     t2.append(wrfout.variables['T2'][0, south_north_station_1, west_east_station_1])
     u10.append(wrfout.variables['U10'][0, south_north_station_1, west_east_station_1])
     v10.append(wrfout.variables['V10'][0, south_north_station_1, west_east_station_1])
-    u.append(wrf.getvar(wrfout, "ua", None, units = "m/s"))
-    v.append(wrf.getvar(wrfout, "va", None, units = "m/s"))
-    t.append(wrf.getvar(wrfout, "temp", None, units = "K"))
-    ht.append(wrf.getvar(wrfout, "z", units = "m", msl = False))
-    times.append(wrfout.variables['Times'][:])
-    # print(wrfout)
+    #u.append(wrf.getvar(wrfout, "ua", None, units = "m/s"))
+    #v.append(wrf.getvar(wrfout, "va", None, units = "m/s"))
+    #t.append(wrf.getvar(wrfout, "temp", None, units = "K"))
+    #ht.append(wrf.getvar(wrfout, "z", units = "m", msl = False))
     rain.append(wrfout.variables['RAINC'][0, south_north_station_1, west_east_station_1] + 
                 wrfout.variables['RAINNC'][0, south_north_station_1, west_east_station_1])
-
-
+    times.append(wrf.extract_times(wrfout, timeidx = wrf.ALL_TIMES, method = 'cat', do_xtime = False))
+df1 = []
+for i in range(len(times)):
+    df1.append(pd.to_datetime(times[i], format = "%Y-%m-%dT%H:%M:%S.%f"))
 # %% Making them numpy arrays to work with 
-u = np.array(u)
-u = u[:, :, south_north_station_1, west_east_station_1]
-v = np.array(v)
-v = v[:, :, south_north_station_1, west_east_station_1]
-t = np.array(t)
-t = t[:, :, south_north_station_1, west_east_station_1]
-t -= 273.15
-ht = np.array(ht)
-ht = ht[:, :, south_north_station_1, west_east_station_1]
+
 t2 = np.array(t2)
 t2 -= 273.15
 
-# %% Interplevels
-'''
-u = wrf.interplevel(u, ht, 2)
-v = wrf.interplevel(v, ht, 2)
-t = wrf.interplevel(t, ht, 2) '''
-df1 = ['2021-12-23 00:00 UTC', '2021-12-23 01:00 UTC',
-               '2021-12-23 02:00 UTC', '2021-12-23 03:00 UTC',
-               '2021-12-23 04:00 UTC', '2021-12-23 05:00 UTC',
-               '2021-12-23 06:00 UTC', '2021-12-23 07:00 UTC',
-               '2021-12-23 08:00 UTC', '2021-12-23 09:00 UTC',
-               '2021-12-23 10:00 UTC', '2021-12-23 11:00 UTC',
-               '2021-12-23 12:00 UTC', '2021-12-23 13:00 UTC',
-               '2021-12-23 14:00 UTC', '2021-12-23 15:00 UTC',
-               '2021-12-23 16:00 UTC', '2021-12-23 17:00 UTC',
-               '2021-12-23 18:00 UTC', '2021-12-23 19:00 UTC',
-               '2021-12-23 20:00 UTC', '2021-12-23 21:00 UTC',
-               '2021-12-23 22:00 UTC', '2021-12-23 23:00 UTC',
-               '2021-12-24 00:00 UTC', '2021-12-24 01:00 UTC',
-               '2021-12-24 02:00 UTC',
-               '2021-12-24 03:00 UTC', '2021-12-24 04:00 UTC',
-               '2021-12-24 05:00 UTC', '2021-12-24 06:00 UTC',
-               '2021-12-24 07:00 UTC', '2021-12-24 08:00 UTC',
-               '2021-12-24 09:00 UTC', '2021-12-24 10:00 UTC',
-               '2021-12-24 11:00 UTC', '2021-12-24 12:00 UTC',
-               '2021-12-24 13:00 UTC',
-               '2021-12-24 14:00 UTC', '2021-12-24 15:00 UTC',
-               '2021-12-24 16:00 UTC', '2021-12-24 17:00 UTC',
-               '2021-12-24 18:00 UTC',
-               '2021-12-24 19:00 UTC', '2021-12-24 20:00 UTC',
-               '2021-12-24 21:00 UTC', '2021-12-24 22:00 UTC',
-               '2021-12-24 23:00 UTC', '2021-12-25 00:00 UTC',
-               '2021-12-25 01:00 UTC', '2021-12-25 02:00 UTC',
-               '2021-12-25 03:00 UTC', '2021-12-25 04:00 UTC',
-               '2021-12-25 05:00 UTC', '2021-12-25 06:00 UTC',
-               '2021-12-25 07:00 UTC', '2021-12-25 08:00 UTC',
-               '2021-12-25 09:00 UTC', '2021-12-25 10:00 UTC',
-               '2021-12-25 11:00 UTC', '2021-12-25 12:00 UTC',
-               '2021-12-25 13:00 UTC', '2021-12-25 14:00 UTC',
-               '2021-12-25 15:00 UTC', '2021-12-25 16:00 UTC',
-               '2021-12-25 17:00 UTC', '2021-12-25 18:00 UTC',
-               '2021-12-25 19:00 UTC', '2021-12-25 20:00 UTC',
-               '2021-12-25 21:00 UTC', '2021-12-25 22:00 UTC',
-               '2021-12-25 23:00 UTC', '2021-12-26 00:00 UTC']
 # %% Reading in the csv and plotting it compared to the wrfout file
 df = pd.read_csv('/Volumes/Data/School/SJSU/Spring_2022/150/Projects/Project_2/SKBC1.csv', skiprows = [0, 1, 2, 3, 4, 5, 7])
 date = df['Date_Time']
 df.index = pd.to_datetime(date, format="%m/%d/%Y %H:%M UTC")
-df1 = pd.to_datetime(df1, format = "%Y-%m-%d %H:%M UTC")
+#df1 = pd.to_datetime(df1, format = "%Y-%m-%d %H:%M UTC")
 wind = df['wind_speed_set_1'].values * units.mph
 wind *= 0.44704
 dire = df['wind_direction_set_1'].values * units.degrees
@@ -163,7 +114,7 @@ ax.grid()
 plt.show()
 # %% V winds
 fig, ax = plt.subplots(figsize = (15, 8))
-ax.plot(df.index, (df['precip_accum_set_1'] - 15.77) * 25.4, color = 'red', label = 'Observation Precipitation')
+ax.plot(df.index, (df['precip_accum_set_1'] - df['precip_accum_set_1'][0]) * 25.4, color = 'red', label = 'Observation Precipitation')
 ax.plot(df1, rain, color = 'blue', label = 'Wrfout File')
 ax.set_ylabel('Precipitation (mm)', fontsize = 12, fontweight = 'bold')
 ax.set_xlabel('Time (UTC)', fontsize = 12, fontweight = 'bold')
@@ -179,42 +130,23 @@ plt.show()
 print('reading in the wrfout files')
 path_2 = r'/Volumes/Data/School/SJSU/Spring_2022/150/Projects/Project_2/wrfout_second_run/'
 rain_2 = []
-u_2 = []
-v_2 = []
-t_2 = []
-ht_2 = []
-lat_2 = []
-lon_2 = []
-times_2 = []
 t2_2 = []
 u10_2 = []
 v10_2 = []
+times_2 = []
 filenames = glob.glob(path_2 + 'wrfout_d02_2021-12*')
 for filename in filenames:
     wrfout = nc.Dataset(filename)
-    xtime = wrfout.variables['XTIME'][:]
     t2_2.append(wrfout.variables['T2'][0, south_north_station_1, west_east_station_1])
     u10_2.append(wrfout.variables['U10'][0, south_north_station_1, west_east_station_1])
     v10_2.append(wrfout.variables['V10'][0, south_north_station_1, west_east_station_1])
-    u_2.append(wrf.getvar(wrfout, "ua", None, units = "m/s"))
-    v_2.append(wrf.getvar(wrfout, "va", None, units = "m/s"))
-    t_2.append(wrf.getvar(wrfout, "temp", None, units = "K"))
-    ht_2.append(wrf.getvar(wrfout, "z", units = "m", msl = False))
-    times_2.append(wrfout.variables['Times'][:])
-    # print(wrfout)
     rain_2.append(wrfout.variables['RAINC'][0, south_north_station_1, west_east_station_1] + 
                 wrfout.variables['RAINNC'][0, south_north_station_1, west_east_station_1])
-
+    times_2.append(wrf.extract_times(wrfout, timeidx = wrf.ALL_TIMES, method = 'cat', do_xtime = False))
+df1 = []
+for i in range(len(times_2)):
+    df1.append(pd.to_datetime(times_2[i], format = "%Y-%m-%dT%H:%M:%S.%f"))
 # %% Making them numpy arrays to work with 
-u_2 = np.array(u_2)
-u_2 = u_2[:, :, south_north_station_1, west_east_station_1]
-v_2 = np.array(v_2)
-v_2 = v_2[:, :, south_north_station_1, west_east_station_1]
-t_2 = np.array(t_2)
-t_2 = t_2[:, :, south_north_station_1, west_east_station_1]
-t_2 -= 273.15
-ht_2 = np.array(ht_2)
-ht_2 = ht_2[:, :, south_north_station_1, west_east_station_1]
 t2_2 = np.array(t2_2)
 t2_2 -= 273.15
 
@@ -222,7 +154,6 @@ t2_2 -= 273.15
 df = pd.read_csv('/Volumes/Data/School/SJSU/Spring_2022/150/Projects/Project_2/SKBC1.csv', skiprows = [0, 1, 2, 3, 4, 5, 7])
 date = df['Date_Time']
 df.index = pd.to_datetime(date, format="%m/%d/%Y %H:%M UTC")
-df1 = pd.to_datetime(df1, format = "%Y-%m-%d %H:%M UTC")
 wind = df['wind_speed_set_1'].values * units.mph
 wind *= 0.44704
 dire = df['wind_direction_set_1'].values * units.degrees
@@ -267,7 +198,7 @@ ax.grid()
 plt.show()
 # %% V winds
 fig, ax = plt.subplots(figsize = (15, 8))
-ax.plot(df.index, (df['precip_accum_set_1'] - 15.77) * 25.4, color = 'red', label = 'Observation Precipitation')
+ax.plot(df.index, (df['precip_accum_set_1'] - df['precip_accum_set_1'][0]) * 25.4, color = 'red', label = 'Observation Precipitation')
 ax.plot(df1, rain_2, color = 'blue', label = 'Wrfout File')
 ax.set_ylabel('Precipitation (mm)', fontsize = 12, fontweight = 'bold')
 ax.set_xlabel('Time (UTC)', fontsize = 12, fontweight = 'bold')
@@ -321,7 +252,7 @@ ax.grid()
 plt.show()
 # %% V winds
 fig, ax = plt.subplots(figsize = (15, 8))
-ax.plot(df.index, (df['precip_accum_set_1'] - 15.77) * 25.4, color = 'red', label = 'Observation Precipitation')
+ax.plot(df.index, (df['precip_accum_set_1'] - df['precip_accum_set_1'][0]) * 25.4, color = 'red', label = 'Observation Precipitation')
 ax.plot(df1, rain, color = 'green', label = 'Regular Physics Wrfout')
 ax.plot(df1, rain_2, color = 'blue', label = 'Modified Physics Wrfout')
 ax.set_ylabel('Precipitation (mm)', fontsize = 12, fontweight = 'bold')
@@ -332,20 +263,3 @@ ax.set_xlim(df1[0], df1[-1])
 ax.legend()
 ax.grid()
 plt.show()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
