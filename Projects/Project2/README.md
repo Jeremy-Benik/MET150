@@ -1,1 +1,1 @@
-These are by no means among my better codes, but these codes plot some of the variables from wrfout files compared to observational data from mesowest files
+These codes plot the wrfout file from a nested domain wrf run I did for my project in METR 150. These codes require a wrfin file to get the location of the station, then it plots u10, v10, t2, and rain accumulation. 
